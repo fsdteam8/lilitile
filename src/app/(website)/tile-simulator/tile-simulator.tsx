@@ -6,7 +6,7 @@ import { ColorEditor } from "@/components/svg-editor/color-editor"
 import { parseSvgString } from "@/components/svg-editor/svg-parser"
 import type { SvgData } from "@/components/svg-editor/types"
 import EnvironmentSelector from "@/components/view-panel"
-import { CategorySelector } from "@/components/TilesCategory"
+import Sidebar from "@/components/Sidebar"
 
 interface Tile {
   id: string
@@ -60,7 +60,7 @@ export default function TileSimulator() {
         <div className="flex gap-x-10 w-full h-full p-6">
           {/* Category Selector */}
           <div className="border rounded-lg shadow-sm overflow-hidden w-[200px]">
-            <CategorySelector selectedCategory={selectedCategory} onCategorySelect={handleCategorySelect} categories={[]} />
+          <Sidebar selectedCategory={selectedCategory} onCategorySelect={handleCategorySelect} categories={[]} />
           </div>
           {/* Left Panel - Categories and Tile Selection */}
           <div className="flex flex-col gap-6 w-[300px]">

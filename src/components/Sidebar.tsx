@@ -1,48 +1,26 @@
 "use client"
 
+import { categories } from "@/data/sidebarData";
 import { cn } from "@/lib/utils"
 
 interface Category {
-    id: string
-    name: string
-    description: string
-    image: string
-}
+    id: string;
+    name: string;
+    description: string;
+    image: string;
+  }
 
-interface CategorySelectorProps {
-    categories: Category[]
-    selectedCategory: string | null
-    onCategorySelect: (categoryId: string) => void
-}
+  interface TileSelectionProps {
+    selectedCategory: string | null;
+    onCategorySelect: (categoryId: string) => void;
+    categories: Category[]; // Ensure categories is correctly typed
+  }
 
-const categories: Category[] = [
-    {
-        id: "geometric",
-        name: "Geometric",
-        description: "Modern geometric patterns with clean lines and shapes",
-        image: "/categories/geometric.svg",
-    },
-    {
-        id: "floral",
-        name: "Floral",
-        description: "Elegant floral patterns and natural motifs",
-        image: "/categories/floral.svg",
-    },
-    {
-        id: "abstract",
-        name: "Abstract",
-        description: "Contemporary abstract designs and patterns",
-        image: "/categories/abstract.svg",
-    },
-    {
-        id: "traditional",
-        name: "Traditional",
-        description: "Classic patterns inspired by traditional designs",
-        image: "/categories/traditional.svg",
-    },
-]
+// Add this category definition in TileSimulator.tsx
 
-export function CategorySelector({ selectedCategory, onCategorySelect }: CategorySelectorProps) {
+  
+
+function Sidebar({ selectedCategory, onCategorySelect}: TileSelectionProps) {
     return (
         <div className="p-4 space-y-4">
             <h2 className="text-lg font-bold text-center bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
@@ -50,6 +28,7 @@ export function CategorySelector({ selectedCategory, onCategorySelect }: Categor
             </h2>
             <div className="grid grid-cols-2 gap-4">
                 {categories.map((category) => (
+                  
                     <button
                         key={category.id}
                         onClick={() => onCategorySelect(category.id)} 
@@ -67,10 +46,15 @@ export function CategorySelector({ selectedCategory, onCategorySelect }: Categor
                         </div>
                     </button>
                 ))}
+
+                
             </div>
         </div>
     )
 }
 
-export { categories }
+
+export default Sidebar;
+
+
 
