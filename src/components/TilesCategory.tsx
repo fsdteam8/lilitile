@@ -52,7 +52,7 @@ export function CategorySelector({ selectedCategory, onCategorySelect }: Categor
                 {categories.map((category) => (
                     <button
                         key={category.id}
-                        onClick={() => onCategorySelect(category.id)}
+                        onClick={() => onCategorySelect(category.id)} 
                         className={cn(
                             "relative aspect-square rounded-lg overflow-hidden border-2 transition-all p-4",
                             selectedCategory === category.id
