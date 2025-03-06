@@ -1,116 +1,153 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { TileSelection } from "@/components/tile-selection"
-import { ColorEditor } from "@/components/svg-editor/color-editor"
-import { parseSvgString } from "@/components/svg-editor/svg-parser"
-import type { SvgData } from "@/components/svg-editor/types"
-import EnvironmentSelector from "@/components/view-panel"
-import Sidebar from "@/components/Sidebar"
+import { useState, useEffect, useCallback } from "react";
+import { TileSidebar } from "@/components/TilesCostomize/sidebar";
+import { TileSelection } from "@/components/TilesCostomize/tile-selection";
+import { ColorEditor } from "@/components/TilesCostomize/color-editor";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import EnvironmentSelector from "@/components/TilesCostomize/enviroment-selector";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { SvgData, PathData } from "@/components/TilesCostomize/types";
+import { tileCategories } from "@/data/tileCategory";
 
 interface Tile {
-  id: string
-  name: string
-  collection: string
-  svg: string
+  id: string;
+  name: string;
+  svgData: SvgData;
 }
 
-// Static SVG string for initial display in Color Editor
-const staticSvgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-  <rect x="10" y="10" width="80" height="00" fill="#ccc" />
-</svg>`
+interface Category {
+  id: string;
+  name: string;
+  tiles: Tile[];
+}
 
-// Placeholder SVG for View Panel
-const placeholderSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="400">
-  <rect x="10" y="10" width="80" height="40" fill="#f0f0f0" />
-  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="12" fill="#999">No Tile Selected</text>
-</svg>`
+export default function TileDesigner() {
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedTile, setSelectedTile] = useState<Tile | null>(null);
+  const [pathColors, setPathColors] = useState<Record<string, string>>({});
+  const [showBorders, setShowBorders] = useState(false);
 
-export default function TileSimulator() {
-  const [selectedTile, setSelectedTile] = useState<Tile | null>(null)
-  const [currentSvg, setCurrentSvg] = useState<SvgData | null>(parseSvgString(staticSvgString, "static"))
-  const [selectedCategory, setSelectedCategory] = useState<string>("geometric")
-  const [showBorders, setShowBorders] = useState<boolean>(false)
-  const [pathColors, setPathColors] = useState<Record<string, string>>({})
+  // Ensure tileCategories is typed correctly
+  const categories: Category[] = tileCategories as Category[];
 
-  const handleTileSelect = (tile: Tile) => {
-    setSelectedTile(tile)
-    if (tile.svg) {
-      setCurrentSvg(parseSvgString(tile.svg, tile.id))
+  // Get the selected category
+  const selectedCategory = selectedCategoryId
+    ? categories.find((cat) => cat.id === selectedCategoryId) || null
+    : null;
+
+  // Initialize pathColors when a tile is selected
+  useEffect(() => {
+    if (selectedTile) {
+      const initialPathColors: Record<string, string> = {};
+      selectedTile.svgData.paths.forEach((path: PathData) => {
+        if (path.fill) {
+          initialPathColors[path.id] = path.fill;
+        }
+      });
+      setPathColors(initialPathColors);
+    } else {
+      setPathColors({});
     }
-  }
+  }, [selectedTile]);
 
-  const handleColorSelect = (pathId: string, color: { id: string; color: string; name: string }) => {
-    setPathColors((prev) => ({
-      ...prev,
-      [pathId]: color.color,
-    }))
-  }
+  const handleCategorySelect = useCallback((categoryId: string) => {
+    setSelectedCategoryId(categoryId);
+  }, []);
 
-  const handleCategorySelect = (categoryId: string) => {
-    setSelectedCategory(categoryId)
-    setSelectedTile(null)
-    setCurrentSvg(parseSvgString(staticSvgString, "static")) // Reset to static SVG
-    setPathColors({})
-  }
+  const handleTileSelect = useCallback((tile: Tile) => {
+    setSelectedTile(tile);
+  }, []);
+
+  const handlePathColorsChange = useCallback(
+    (newColors: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => {
+      setPathColors(newColors);
+    },
+    []
+  );
+
+  const handleShowBordersChange = useCallback((show: boolean) => {
+    setShowBorders(show);
+  }, []);
+
+  const handleSaveTileColors = useCallback(
+    (updatedSvg: SvgData) => {
+      if (!selectedTile || !selectedCategory) return;
+
+      // Create updated tile with new SVG data
+      const updatedTile: Tile = {
+        ...selectedTile,
+        svgData: updatedSvg,
+      };
+
+      // Update the tile in the category
+      const categoryIndex = categories.findIndex((cat) => cat.id === selectedCategory.id);
+      if (categoryIndex >= 0) {
+        const tileIndex = categories[categoryIndex].tiles.findIndex((t: Tile) => t.id === selectedTile.id);
+        if (tileIndex >= 0) {
+          categories[categoryIndex].tiles[tileIndex] = updatedTile;
+        }
+      }
+
+      // Update the selected tile
+      setSelectedTile(updatedTile);
+    },
+    [selectedTile, selectedCategory, categories]
+  );
 
   return (
-    <div className="flex flex-col h-screen bg-white">
-      <div className="flex-1 flex overflow-hidden">
-        <div className="flex gap-x-10 w-full h-full p-6">
-          {/* Category Selector */}
-          <div className="border rounded-lg shadow-sm overflow-hidden w-[200px]">
-          <Sidebar selectedCategory={selectedCategory} onCategorySelect={handleCategorySelect} categories={[]} />
-          </div>
-          {/* Left Panel - Categories and Tile Selection */}
-          <div className="flex flex-col gap-6 w-[300px]">
-            {/* Tile Selection */}
-            <div className="flex-1 border rounded-lg shadow-sm overflow-hidden">
-              <div className="p-4 border-b">
-                <h2 className="text-lg font-bold text-center bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-transparent">
-                  TILE SELECTION
-                </h2>
-                <p className="text-xs text-center text-gray-500 mt-1">(SCROLL FOR MORE OPTIONS)</p>
+    <SidebarProvider>
+      <div className="flex h-screen">
+        <TileSidebar categories={categories} selectedCategoryId={selectedCategoryId} onCategorySelect={handleCategorySelect} />
+
+        <SidebarInset className="p-4 overflow-auto">
+          <div className="max-w-full mx-auto">
+            <h1 className="text-3xl font-bold mb-4">Tile Designer</h1>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              {/* Left column - Tile Selection */}
+              <div className="lg:col-span-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle>Tile Selection</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <TileSelection category={selectedCategory} onTileSelect={handleTileSelect} />
+                  </CardContent>
+                </Card>
               </div>
-              <TileSelection onTileSelect={handleTileSelect} selectedTile={selectedTile} category={selectedCategory} />
+
+              {/* Middle column - Color Editor */}
+              <div className="lg:col-span-3">
+                <ColorEditor
+                  svg={selectedTile?.svgData || null}
+                  pathColors={pathColors}
+                  showBorders={showBorders}
+                  onShowBordersChange={handleShowBordersChange}
+                  onPathColorsChange={handlePathColorsChange}
+                  onSave={handleSaveTileColors}
+                />
+              </div>
+
+              {/* Right column - Environment Preview */}
+              <div className="lg:col-span-5">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle>Environment Preview</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {selectedTile ? (
+                      <EnvironmentSelector currentSvg={selectedTile.svgData} pathColors={pathColors} showBorders={showBorders} />
+                    ) : (
+                      <div className="flex items-center justify-center h-64 text-muted-foreground">Select a tile to preview in environments</div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
-
-          {/* Color Editor Panel */}
-          <div className="border rounded-lg shadow-sm overflow-hidden w-[350px]">
-            <div className="p-4 border-b">
-              <h2 className="text-lg font-bold text-center bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
-                COLOR EDITOR
-              </h2>
-            </div>
-            {currentSvg ? (
-              <ColorEditor
-                svg={currentSvg}
-                showBorders={showBorders}
-                setShowBorders={setShowBorders}
-                onColorSelect={handleColorSelect}
-              />
-            ) : (
-              <div className="p-4 text-center text-gray-500">Select a tile to edit its colors</div>
-            )}
-          </div>
-
-          {/* View Panel */}
-          <div className="flex-1 border rounded-lg shadow-sm overflow-hidden">
-            <div className="p-4 border-b">
-              <h2 className="text-lg font-bold text-center bg-gradient-to-r from-green-500 to-yellow-500 bg-clip-text text-transparent">
-                VIEW
-              </h2>
-            </div>
-            <EnvironmentSelector
-              currentSvg={currentSvg || parseSvgString(placeholderSvg, "placeholder")} // Use placeholder if no tile is selected
-              pathColors={pathColors}
-              showBorders={showBorders}
-            />
-
-          </div>
-        </div>
+        </SidebarInset>
       </div>
-    </div>
-  )
+    </SidebarProvider>
+  );
 }
